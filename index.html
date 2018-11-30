@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>PPA Viz</title>
+    <script type="text/javascript" src="d3.v3.js"></script>
+    <script src="topojson.v1.min.js"></script>
+    <script src="colorbrewer.js" type="text/javascript"></script>
+    <script src="jquery.min.js"></script>
+    <script src="d3-tip.js"></script>
+    <style type="text/css">
+      body {
+
+        background-color: #272c36;
+        color: #ffffff;
+        font-family: sans-serif;
+      }
+      hi{
+        font-size: 20px;
+      }
+
+
+
+
+.m{
+     background-color: #97a1b4; /* Green */
+    border: none;
+    color: white;
+    padding: 10px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px;
+    border-radius: 6px;
+}
+
+
+   .visualisation {
+      float: right;
+      width: 220px;
+    }
+    .map {
+      float: left;
+      width: 50%;
+    }
+    .graph{
+        float:left !important; 
+        width:30%;
+        font-size: 10px;
+        color: #ffffff;
+    }
+    .graph path{
+      color:white;
+    }
+
+      path {
+        stroke-width: 1px;
+      }
+
+      .map path:hover {
+        fill: #C4FFB0;
+        fill-opacity: 1 !important;
+      }
+
+      svg, .info {
+        float: left;
+      }
+
+      .info {
+        padding-left: 30px;
+      }
+      .info button{
+        background-color: #97a1b4; /* Green */
+    border: none;
+    color: white;
+    padding: 10px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px;
+      border-radius: 6px;
+      }
+      .info button:focus{
+      }
+    </style>
+  </head>
+  <body>
+    <h1 id="header">Have you participated in ____________ in the last year?</h1>
+    <button id="ugh" class="m" value='rateByClassical'>Classical</button>
+    <button class="m" value='rateByJazz'>Jazz</button>
+    <button class="m" value='rateByMusical'>Musical</button>
+    <button class="m" value='rateByPlays'>Plays</button>
+    <button class="m" value='rateByOpera'>Opera</button>
+    <button class="m" value='rateByBallet'>Ballet</button>
+    <button class="m" value='rateByDance'>Dance</button>
+    <button class="m" value='rateByCraft'>Craft Fairs</button>
+    <button class="m" value='rateByArtMuseum'>Art Museums</button>
+    <button class="m" value='rateByBooks'>Books</button>
+    <div class="visualisation">
+  <div>Loading Visualisation Choropleth</div>
+
+</div>
+<div class="map">
+</div>
+<div class="graph">
+</div>
+    <script type="text/javascript">
+'use strict';
+var dataset;
+var totalset;
+var flagEd = false;
+var flagAge = true;
+var height = 400;
+ var width = 500 * 1.21;
+     var margin2 = {top: 20, right: 20, bottom: 75, left: 40},
+    width2 = 400 - margin2.left - margin2.right,
+    height2 = 460 - margin2.top - margin2.bottom;
+d3.json('us-states.json', function (err, data) {
+   
+    if (err) {
+        d3.select('.visualisation div').text('Error loading GeoJSON');
+    }
+    dataset = data;
+
+    drawInfo();
+    d3.select('.visualisation div').remove();
+
+});
+//Define map projection
+    var projection = d3.geo.albersUsa()
+                   .translate([width/2, height/2])
+                   .scale([600]);
+
+
+    //Define path generator
+    var path = d3.geo.path()
+               .projection(projection);
+
+
+    var svg = d3.select(".map")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .append("g");
+
+    var svg2 = d3.select(".graph").append("svg")
+    .attr("width", width2 + margin2.left + margin2.right)
+    .attr("height", height2 + margin2.top + margin2.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
+
+    var rateByOverall = {};
+    var rateByClassical = {};
+    var rateByJazz = {};
+    var rateByPlays = {};
+    var rateByOpera = {};
+    var rateByBallet = {};
+    var rateByMusical = {};
+    var rateByDance = {};
+    var rateByCraft = {};
+    var rateByArtMuseum = {};
+    var rateByBooks = {};
+    var totalset = {};
+
+d3.csv("StateTotals_6.csv", function(error, totals){
+   totals.forEach(function (d) {
+    totalset[d.FIPS_STATE] = d.row_count;
+}); 
+});
+
+
+function drawMap(type) {
+    var height = window.innerHeight;
+    var width = window.innerHeight * 1.21;
+    if(type=='rateByOpera'){
+      $('#header').text("Have you gone to the opera in the last year?");}
+    else if(type=='rateByMusical'){
+      $('#header').text("Have you gone to a musical play in the last year?");}
+    else if(type=='rateByPlays'){
+      $('#header').text("Have you gone to a (non-musical) play in the last year?");}
+    else if(type=='rateByArtMuseum'){
+      $('#header').text("Have you gone to an art museum in the last year?");}
+    else if(type=='rateByCraft'){
+      $('#header').text("Have you gone to craft fair in the last year?");}
+    else if(type=='rateByBooks'){
+      $('#header').text("Have you read any books in the last year?");}
+    else if(type=='rateByJazz'){
+      $('#header').text("Have you gone to a live jazz performance in the last year?");}
+    else if(type=='rateByClassical'){
+      $('#header').text("Have you gone to a live classical music performance in the last year?");}
+    else if(type=='rateByBallet'){
+      $('#header').text("Have you gone to a ballet performance in the last year?");}
+    else if(type=='rateByDance'){
+      $('#header').text("Have you gone to a (non-ballet) dance performance in the last year?");}
+
+     d3.csv("Survey2.csv", function(error, dataPerc) {
+
+    // set the colour scale of the choropleth map
+            var cscale = null;
+            var domain;
+            var choro = null;
+
+            if (type == "rateByOverall") {
+                choro = rateByClassical;
+                cscale = colorbrewer.PuBu[9]
+            }
+            if (type == "rateByClassical") {
+                choro = rateByClassical;
+                cscale = colorbrewer.Oranges[9]
+            }
+            if (type == "rateByJazz") {
+                choro = rateByJazz;
+                cscale = colorbrewer.Reds[9]
+            }
+            if (type == "rateByPlays") {
+                choro = rateByPlays;
+                cscale = colorbrewer.Greens[9]
+            }
+            if (type == "rateByOpera") {
+                choro = rateByOpera;
+                cscale = colorbrewer.Purples[9]
+            }
+            if (type == "rateByBallet") {
+                choro = rateByBallet;
+                cscale = colorbrewer.Blues[9]
+            }
+            if (type == "rateByMusical") {
+                choro = rateByMusical;
+                cscale = colorbrewer.Reds[9]
+            }
+            if (type == "rateByDance") {
+                choro = rateByDance;
+                cscale = colorbrewer.Purples[9]
+            }
+            if (type == "rateByCraft") {
+                choro = rateByCraft;
+                cscale = colorbrewer.Oranges[9]
+            }
+            if (type == "rateByArtMuseum") {
+                choro = rateByArtMuseum;
+                cscale = colorbrewer.Greens[9]
+            }
+            if (type == "rateByBooks") {
+                choro = rateByBooks;
+                cscale = colorbrewer.Blues[9]
+            }
+
+    dataPerc.forEach(function (d) {
+    rateByOverall[d.FIPS_STATE] = +d.Overall;
+    rateByClassical[d.FIPS_STATE] = +d.Classical_Perc;
+    rateByJazz[d.FIPS_STATE] = +d.Jazz_Perc;
+    rateByPlays[d.FIPS_STATE] = +d.Plays_Perc;
+    rateByOpera[d.FIPS_STATE] = +d.Opera_Perc;
+    rateByBallet[d.FIPS_STATE] = +d.Ballet_Perc;
+    rateByMusical[d.FIPS_STATE] = +d.Musical_Perc;
+    rateByDance[d.FIPS_STATE] = +d.Dance_Perc;
+    rateByCraft[d.FIPS_STATE] = +d.Craft_Perc;
+    rateByArtMuseum[d.FIPS_STATE] = +d.ArtMuseum_Perc;
+    rateByBooks[d.FIPS_STATE] = +d.Books_Perc;
+});
+
+    var min = Infinity, max = -Infinity, x;
+    for( x in choro) {
+        if(x != 11){
+            if( choro[x] < min) min = choro[x];
+            if( choro[x] > max) max = choro[x];
+    }}
+
+
+
+
+    var color = d3.scale.quantize()
+                    .domain([min, max])
+                    .range(cscale);
+    d3.select("g")
+        .selectAll("path")
+        .remove();
+
+
+   var appending = svg.selectAll("g")
+                        .data(dataset.features).enter().append("path")
+                 .attr("d", path).attr('vector-effect', 'non-scaling-stroke').attr("stroke","white").attr("fill",
+                        function (d) {
+                            return color(choro[d.id]);
+                        }).on('click',  
+                        function (d){
+                            var filter = type.replace("rateBy","");
+                            return clickHandler(d, [choro[d.id],filter]);
+                    })
+
+
+            
+});
+    }
+
+
+    // handle on click event to switch between maps
+    d3.selectAll(".m")
+            .on("click", function() {
+                var choro = this.getAttribute("value");
+                drawMap(choro);
+		d3.select(".graph").selectAll("g").selectAll("path").remove();
+    		d3.select(".graph").selectAll("g").selectAll("rect")
+        	.remove();
+    		d3.select(".graph").selectAll("g").selectAll("text")
+    		.remove();
+    		d3.select(".graph").selectAll(".legend").remove();
+		d3.select('.info .name').text("none");
+    		d3.select('.info .value').text("none");
+    		d3.select('.info .total').text("none");
+            });
+
+function drawInfo() {
+    var info = d3.select('.visualisation').append('div').attr('class', 'info');
+    info.append('h2').text('State');
+    info.append('p').attr('class', 'name').text('none');
+    info.append('h2').text('Percentage');
+    info.append('p').attr('class', 'value').text('none');
+    info.append('h2').text('Total Respondants');
+    info.append('p').attr('class', 'total').text('none');
+    info.append('button').attr('class', 'button').text('View by Education');
+}
+function getCountryByCode(code,data) {
+    var x;
+    for (x in data){
+        if (x.id==code){
+            return x.info;
+        }
+    }
+}
+
+function drawGraph(state,cat){
+    var width = width2;
+    var height= height2;
+    var margin = margin2;
+     
+    var x0 = d3.scale.ordinal()
+        .rangeRoundBands([0, width], 0.1);
+     
+    var x1 = d3.scale.ordinal();
+     
+    var y = d3.scale.linear()
+        .range([height, 0]);
+     
+    var xAxis = d3.svg.axis()
+        .scale(x0)
+        .orient("bottom");
+     
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left")
+        .tickFormat(d3.format(".2s"));
+     
+    var color = d3.scale.ordinal()
+        .range(["#fcbba1", "#fb6a4a", "#cb181d", "#c7e9c0", "#74c476", "#006d2c", "#ffffff"]);
+
+     
+
+     
+    var yBegin;
+     
+    var innerColumns = {
+      "column1" : ["Male-Yes","Male-No","Male-NA"],
+      "column2" : ["Female-Yes","Female-No","Female-NA"]
+    }
+
+     
+    d3.json("realdata.json", function(error, data) {
+      data.forEach(function(d){
+        if (d.id==state && d.cat==cat){
+            data = d.info;
+      var columnHeaders = d3.keys(data[0]).filter(function(key) { return key !== "State"; });
+      color.domain(d3.keys(data[0]).filter(function(key) { return key !== "State"; }));
+      data.forEach(function(d) {
+        var yColumn = new Array();
+        d.columnDetails = columnHeaders.map(function(name) {
+        var ic;
+          for (ic in innerColumns) {
+            if($.inArray(name, innerColumns[ic]) >= 0){
+              if (!yColumn[ic]){
+                yColumn[ic] = 0;
+              }
+              yBegin = yColumn[ic];
+              yColumn[ic] += +d[name];
+              return {name: name, column: ic, yBegin: yBegin, yEnd: +d[name] + yBegin,};
+            }
+          }
+        });
+        d.total = d3.max(d.columnDetails, function(d) { 
+          return d.yEnd; 
+        });
+      });
+
+     
+      x0.domain(data.map(function(d) { return d.State; }));
+      x1.domain(d3.keys(innerColumns)).rangeRoundBands([0, x0.rangeBand()]);
+     
+      y.domain([0, d3.max(data, function(d) { 
+        return d.total; 
+      })]);
+
+    d3.select(".graph").selectAll("g").selectAll("path")
+        .remove();
+    d3.select(".graph").selectAll("g").selectAll("rect")
+        .remove();
+    d3.select(".graph").selectAll("g").selectAll("text")
+        .remove();
+    d3.select(".graph").selectAll(".legend").remove();
+     
+      svg2.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")").attr("fill","white")
+          .call(xAxis);
+     
+      svg2.append("g")
+          .attr("class", "y axis").attr("fill","white")
+          .call(yAxis)
+        .append("text")
+          .attr("transform", "rotate(-90)")
+          .attr("y", 6)
+          .attr("dy", ".7em")
+          .style("text-anchor", "end")
+          .text("");
+     
+      var project_stackedbar = svg2.selectAll(".project_stackedbar")
+          .data(data)
+        .enter().append("g")
+          .attr("class", "g")
+          .attr("transform", function(d) { return "translate(" + x0(d.State) + ",0)"; });
+     
+      project_stackedbar.selectAll("rect")
+          .data(function(d) { return d.columnDetails; })
+        .enter().append("rect")
+          .attr("width", x1.rangeBand())
+          .attr("x", function(d) { 
+            return x1(d.column);
+             })
+          .attr("y", function(d) { 
+            return y(d.yEnd); 
+          })
+          .attr("height", function(d) { 
+            return y(d.yBegin) - y(d.yEnd); 
+          })
+          .style("fill", function(d) { return color(d.name); });
+     
+      var legend = svg2.selectAll(".legend")
+          .data(columnHeaders.slice().reverse())
+        .enter().append("g")
+          .attr("class", "legend")
+          .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+     
+      legend.append("rect")
+          .attr("x", width - 18)
+          .attr("width", 18)
+          .attr("height", 18)
+          .style("fill", color);
+     
+      legend.append("text")
+          .attr("x", width - 24)
+          .attr("y", 9)
+          .attr("dy", ".35em").attr("fill","white")
+          .style("text-anchor", "end")
+          .text(function(d) { return d; });
+             svg2.selectAll("rect")
+    .on("mouseover", function(d){
+        var xPos = parseFloat(d3.select(this).attr("x"));
+        var yPos = parseFloat(d3.select(this).attr("y"));
+        var height = parseFloat(d3.select(this).attr("height"))
+                
+        d3.select(this).attr("stroke","white").attr("stroke-width",2);             
+        
+        svg2.append("text")
+          .attr("x",15)
+          .attr("y", 50)
+          .attr("class","tooltip").attr("fill","white").attr("font-size", "15px")
+          .text(Math.floor(d.yEnd - d.yBegin));    
+
+              
+      
+    })
+    .on("mouseout",function(){
+      svg2.select(".tooltip").remove();
+      d3.select(this).attr("stroke","pink").attr("stroke-width",0.2);
+                            
+    })
+    }});
+});
+
+}
+
+function drawGraph2(state,cat){
+    var width = width2;
+    var height= height2;
+    var margin = margin2;
+     
+    var x0 = d3.scale.ordinal()
+        .rangeRoundBands([0, width], 0.1);
+     
+    var x1 = d3.scale.ordinal();
+     
+    var y = d3.scale.linear()
+        .range([height, 0]);
+     
+    var xAxis = d3.svg.axis()
+        .scale(x0)
+        .orient("bottom");
+     
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left")
+        .tickFormat(d3.format(".2s"));
+     
+    var color = d3.scale.ordinal()
+        .range(["#fcbba1", "#fb6a4a", "#cb181d", "#c7e9c0", "#74c476", "#006d2c", "#ffffff"]);
+
+     
+
+     
+    var yBegin;
+     
+    var innerColumns = {
+      "column1" : ["Male-Yes","Male-No","Male-NA"],
+      "column2" : ["Female-Yes","Female-No","Female-NA"]
+    }
+
+     
+    d3.json("data2.json", function(error, data) {
+      data.forEach(function(d){
+        if (d.id==state && d.cat==cat){
+            data = d.info;
+      var columnHeaders = d3.keys(data[0]).filter(function(key) { return key !== "State"; });
+      color.domain(d3.keys(data[0]).filter(function(key) { return key !== "State"; }));
+      data.forEach(function(d) {
+        var yColumn = new Array();
+        d.columnDetails = columnHeaders.map(function(name) {
+        var ic;
+          for (ic in innerColumns) {
+            if($.inArray(name, innerColumns[ic]) >= 0){
+              if (!yColumn[ic]){
+                yColumn[ic] = 0;
+              }
+              yBegin = yColumn[ic];
+              yColumn[ic] += +d[name];
+              return {name: name, column: ic, yBegin: yBegin, yEnd: +d[name] + yBegin,};
+            }
+          }
+        });
+
+        d.total = d3.max(d.columnDetails, function(d) { 
+          return d.yEnd; 
+        });
+      });
+
+     
+      x0.domain(data.map(function(d) { return d.State; }));
+      x1.domain(d3.keys(innerColumns)).rangeRoundBands([0, x0.rangeBand()]);
+     
+      y.domain([0, d3.max(data, function(d) { 
+        return d.total; 
+      })]);
+
+    d3.select(".graph").selectAll("g").selectAll("path")
+        .remove();
+    d3.select(".graph").selectAll("g").selectAll("rect")
+        .remove();
+    d3.select(".graph").selectAll("g").selectAll("text")
+        .remove();
+    d3.select(".graph").selectAll(".legend").remove();
+     
+      svg2.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")").attr("fill","white")
+          .call(xAxis).selectAll("text")  
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em")
+            .attr("transform", function(d) {
+                return "rotate(-65)" 
+                });
+     
+      svg2.append("g")
+          .attr("class", "y axis").attr("fill","white")
+          .call(yAxis)
+        .append("text")
+          .attr("transform", "rotate(-90)")
+          .attr("y", 6)
+          .attr("dy", ".7em")
+          .style("text-anchor", "end")
+          .text("");
+     
+      var project_stackedbar = svg2.selectAll(".project_stackedbar")
+          .data(data)
+        .enter().append("g")
+          .attr("class", "g")
+          .attr("transform", function(d) { return "translate(" + x0(d.State) + ",0)"; });
+     
+      project_stackedbar.selectAll("rect")
+          .data(function(d) { return d.columnDetails; })
+        .enter().append("rect")
+          .attr("width", x1.rangeBand())
+          .attr("x", function(d) { 
+            return x1(d.column);
+             })
+          .attr("y", function(d) { 
+            return y(d.yEnd); 
+          })
+          .attr("height", function(d) { 
+            return y(d.yBegin) - y(d.yEnd); 
+          })
+          .style("fill", function(d) { return color(d.name); });
+     
+      var legend = svg2.selectAll(".legend")
+          .data(columnHeaders.slice().reverse())
+        .enter().append("g")
+          .attr("class", "legend")
+          .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+     
+      legend.append("rect")
+          .attr("x", width - 18)
+          .attr("width", 18)
+          .attr("height", 18)
+          .style("fill", color);
+     
+      legend.append("text")
+          .attr("x", width - 24)
+          .attr("y", 9)
+          .attr("dy", ".35em").attr("fill","white")
+          .style("text-anchor", "end")
+          .text(function(d) { return d; });
+
+        svg2.selectAll("rect")
+    .on("mouseover", function(d){
+        var xPos = parseFloat(d3.select(this).attr("x"));
+        var yPos = parseFloat(d3.select(this).attr("y"));
+        var height = parseFloat(d3.select(this).attr("height"))
+                
+        d3.select(this).attr("stroke","white").attr("stroke-width",2);             
+        
+        svg2.append("text")
+          .attr("x",15)
+          .attr("y", 50)
+          .attr("class","tooltip").attr("fill","white").attr("font-size", "15px")
+          .text(Math.floor(d.yEnd - d.yBegin));    
+
+              
+      
+    })
+    .on("mouseout",function(){
+      svg2.select(".tooltip").remove();
+      d3.select(this).attr("stroke","pink").attr("stroke-width",0.2);
+                            
+    })
+     
+    }});
+});
+
+}
+
+
+
+
+
+function clickHandler(o, v) {
+    
+    drawGraph(o.id, v[1]);
+    flagAge = true;
+    d3.select('.info .name').text(code2name(o.id));
+    d3.select('.info .value').text((Math.round((v[0]*100) * 100) / 100) +"%");
+    d3.select('.info .total').text(totalset[o.id]);
+    d3.select('.info .button').text('View by Education').on('click', function(){
+      if(flagAge==true){
+      drawGraph2(o.id, v[1]);
+      d3.select('.info .button').text('View by Age');
+      flagEd=true;
+      flagAge=false;
+
+    }
+      else if(flagEd==true){
+        drawGraph(o.id,v[1]);
+        d3.select('.info .button').text('View by Education');
+        flagEd=false;
+        flagAge=true;
+
+      }
+    });
+    
+}
+
+var state_codes = {
+    '53': 'WA', '10': 'DE', '11': 'DC', '55': 'WI', '54': 'WV', '15': 'HI',
+    '12': 'FL', '56': 'WY', '72': 'PR', '34': 'NJ', '35': 'NM', '48': 'TX',
+    '22': 'LA', '37': 'NC', '38': 'ND', '31': 'NE', '47': 'TN', '36': 'NY',
+    '42': 'PA', '02': 'AK', '32': 'NV', '33': 'NH', '51': 'VA' , '08': 'CO',
+    '06': 'CA', '01': 'AL', '05': 'AR', '50': 'VT', '17': 'IL', '13': 'GA',
+    '18': 'IN', '19': 'IA', '25': 'MA', '04': 'AZ', '16': 'ID', '09': 'CT',
+    '23': 'ME', '24': 'MD', '40': 'OK', '39': 'OH', '49': 'UT', '29': 'MO',
+    '27': 'MN', '26': 'MI', '44': 'RI', '20': 'KS', '30': 'MT', '28': 'MS',
+    '45': 'SC', '21': 'KY', '41': 'OR', '46': 'SD'
+}
+
+
+function code2name(code){
+ return state_codes[code];
+}
+
+
+
+
+      
+    </script>
+  </body>
+</html>
