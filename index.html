@@ -3,11 +3,11 @@
   <head>
     <meta charset="utf-8">
     <title>PPA Viz</title>
-    <script type="text/javascript" src="d3.v3.js"></script>
-    <script src="topojson.v1.min.js"></script>
-    <script src="colorbrewer.js" type="text/javascript"></script>
-    <script src="jquery.min.js"></script>
-    <script src="d3-tip.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/ashah77/VA-Project/d3.v3.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/ashah77/VA-Project/topojson.v1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/ashah77/VA-Project/colorbrewer.js" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/gh/ashah77/VA-Project/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/ashah77/VA-Project/d3-tip.js"></script>
     <style type="text/css">
       body {
 
@@ -115,7 +115,7 @@ var height = 400;
      var margin2 = {top: 20, right: 20, bottom: 75, left: 40},
     width2 = 400 - margin2.left - margin2.right,
     height2 = 460 - margin2.top - margin2.bottom;
-d3.json('us-states.json', function (err, data) {
+d3.json('https://raw.githubusercontent.com/ashah77/VA-Project/master/us-states.json', function (err, data) {
    
     if (err) {
         d3.select('.visualisation div').text('Error loading GeoJSON');
@@ -162,7 +162,7 @@ d3.json('us-states.json', function (err, data) {
     var rateByBooks = {};
     var totalset = {};
 
-d3.csv("StateTotals_6.csv", function(error, totals){
+d3.csv("https://raw.githubusercontent.com/ashah77/VA-Project/master/StateTotals_6.csv", function(error, totals){
    totals.forEach(function (d) {
     totalset[d.FIPS_STATE] = d.row_count;
 }); 
@@ -193,7 +193,7 @@ function drawMap(type) {
     else if(type=='rateByDance'){
       $('#header').text("Have you gone to a (non-ballet) dance performance in the last year?");}
 
-     d3.csv("Survey2.csv", function(error, dataPerc) {
+     d3.csv("https://raw.githubusercontent.com/ashah77/VA-Project/master/Survey2.csv", function(error, dataPerc) {
 
     // set the colour scale of the choropleth map
             var cscale = null;
@@ -365,7 +365,7 @@ function drawGraph(state,cat){
     }
 
      
-    d3.json("realdata.json", function(error, data) {
+    d3.json("https://raw.githubusercontent.com/ashah77/VA-Project/master/realdata.json", function(error, data) {
       data.forEach(function(d){
         if (d.id==state && d.cat==cat){
             data = d.info;
@@ -524,7 +524,7 @@ function drawGraph2(state,cat){
     }
 
      
-    d3.json("data2.json", function(error, data) {
+    d3.json("https://raw.githubusercontent.com/ashah77/VA-Project/master/data2.json", function(error, data) {
       data.forEach(function(d){
         if (d.id==state && d.cat==cat){
             data = d.info;
